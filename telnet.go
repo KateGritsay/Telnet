@@ -7,7 +7,9 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 	"github.com/KateGritsay/Telnet/async"
 )
@@ -26,6 +28,13 @@ if err != nil {
 log.Fatalf("Cannot connect: %v", err)
 }
 
+	exitCh := make(chan os.Signal)
+	signal.Notify(exitCh, syscall.SIGINT)
+	go func() {
+		<-exitCh
+		log.Println("Terminating the process with signal")
+		cancel()
+	}()
 
 
 wg := sync.WaitGroup{}
