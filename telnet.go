@@ -11,7 +11,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
-	"github.com/KateGritsay/Telnet/async"
+	"github.com/KateGritsay/Telnet/scaner"
 )
 
 func main() {
