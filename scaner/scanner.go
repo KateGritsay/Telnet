@@ -6,27 +6,25 @@ import (
 	"log"
 )
 
-type scanner struct{
+type scanner struct {
 	reader io.Reader
-	text chan string
+	text   chan string
 }
 
-func NewScanner (reader io.Reader) scanner {
+func NewScanner(reader io.Reader) scanner {
 	return scanner{reader, make(chan string)}
 }
 
 func (scan scanner) Doing() {
 	scanner := bufio.NewScanner(scan.reader)
-	for scanner.Scan(){
+	for scanner.Scan() {
 		scan.text <- scanner.Text()
 	}
-	if err := scanner.Err();
-		err != nil {
+	if err := scanner.Err(); err != nil {
 		log.Println(err)
 	}
 }
 
-
-func (scanner scanner) Text() <- chan string {
+func (scanner scanner) Text() <-chan string {
 	return scanner.text
 }

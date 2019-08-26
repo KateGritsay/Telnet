@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/KateGritsay/Telnet/scaner"
 	"log"
 	"net"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-	"github.com/KateGritsay/Telnet/scaner"
 )
 
 func main() {
@@ -19,14 +19,14 @@ func main() {
 	timeout := flag.Int("timeout", 60, "")
 	flag.Parse()
 
-dialer := &net.Dialer{}
-ctx := context.Background()
+	dialer := &net.Dialer{}
+	ctx := context.Background()
 
-ctx, cancel := context.WithTimeout(ctx, time.Duration(*timeout) * time.Second)
-conn, err := dialer.DialContext(ctx, "tcp", *adress)
-if err != nil {
-log.Fatalf("Cannot connect: %v", err)
-}
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(*timeout)*time.Second)
+	conn, err := dialer.DialContext(ctx, "tcp", *adress)
+	if err != nil {
+		log.Fatalf("Cannot connect: %v", err)
+	}
 
 	exitCh := make(chan os.Signal)
 	signal.Notify(exitCh, syscall.SIGINT)
@@ -36,31 +36,27 @@ log.Fatalf("Cannot connect: %v", err)
 		cancel()
 	}()
 
+	wg := sync.WaitGroup{}
 
-wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		read(ctx, conn)
+		wg.Done()
+	}()
 
-wg.Add(1)
-go func() {
-	read(ctx, conn)
-	wg.Done()
-}()
+	wg.Add(1)
+	go func() {
+		write(ctx, conn)
+		wg.Done()
+	}()
 
-wg.Add(1)
-go func() {
-	write(ctx, conn)
-	wg.Done()
-}()
-
-
-cancel()
-wg.Wait()
-conn.Close()
-
+	wg.Wait()
+	conn.Close()
 
 }
 
-func read (ctx context.Context, conn net.Conn) {
-	scanner := async.NewScanner(conn)
+func read(ctx context.Context, conn net.Conn) {
+	scanner := scaner.NewScanner(conn)
 	go scanner.Doing()
 	for {
 		select {
@@ -73,7 +69,7 @@ func read (ctx context.Context, conn net.Conn) {
 }
 
 func write(ctx context.Context, conn net.Conn) {
-	scanner := async.NewScanner(os.Stdin)
+	scanner := scaner.NewScanner(os.Stdin)
 	go scanner.Doing()
 	for {
 		select {
@@ -90,6 +86,3 @@ func write(ctx context.Context, conn net.Conn) {
 		}
 	}
 }
-
-
-
