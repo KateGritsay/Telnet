@@ -1,30 +1,17 @@
 package telnet
 
 import (
-	"bufio"
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net"
+	"os"
 	"sync"
 	"time"
-	sc "github.com/KateGritsay/Telnet/scanner"
+	"github.com/KateGritsay/Telnet/async"
 )
 
-func read (ctx context.Context, conn net.Conn) {
-	scanner := bufio.NewScanner(conn)
-	go sc.Doing()
- for {
-	select {
-	case <-ctx.Done():
-		return
-
-	case text := <- scanner.Text():
-		log.Println (text)
-	}
-}
-	log.Printf("Finished readRoutine")
-}
 func main() {
 	adress := flag.String("adr", "127.0.0.1:4242", "adress for connect")
 	timeout := flag.Int("timeout", 60, "")
@@ -61,6 +48,38 @@ wg.Wait()
 conn.Close()
 
 
+}
+
+func read (ctx context.Context, conn net.Conn) {
+	scanner := async.NewScanner(conn)
+	go scanner.Doing()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case text := <-scanner.Text():
+			log.Println(text)
+		}
+	}
+}
+
+func write(ctx context.Context, conn net.Conn) {
+	scanner := async.NewScanner(os.Stdin)
+	go scanner.Doing()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		case text := <-scanner.Text():
+			text = fmt.Sprintf("%s\n", text)
+			_, err := conn.Write([]byte(text))
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+	}
 }
 
 
